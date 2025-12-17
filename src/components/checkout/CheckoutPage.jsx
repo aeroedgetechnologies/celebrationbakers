@@ -1159,140 +1159,114 @@ const handleProceedWithPayment = async (email) => {
 //   };
   
 const handlePayment = async () => {
-    // // Ensure name and email are provided before proceeding
-    // if (!name || !email || !/\S+@\S+\.\S+/.test(email)) {
-    //   setError("Please enter a valid name and email address.");
-    //   setModalOpen(true);
-    //   return; // Don't proceed if name or email is invalid
-    // }
-        // Ensure name, email, and mobile number are provided before proceeding
-        if (!name || !email || !mobileNumber || !/\S+@\S+\.\S+/.test(email)) {
-          setError("Please enter a valid name, email address, and mobile number.");
-          setModalOpen(true);
-          return; // Don't proceed if name, email, or mobile number is invalid
+  if (!name || !email || !mobileNumber || !/\S+@\S+\.\S+/.test(email)) {
+    setError("Please enter a valid name, email, and mobile number.");
+    setModalOpen(true);
+    return;
+  }
+
+  if (!deliverySlot) {
+    Toastify({
+      text: "Please select a delivery slot before proceeding.",
+      duration: 3000,
+      gravity: "top",
+      position: "center",
+      backgroundColor: "linear-gradient(to right, #ff0000, #ff6347)",
+    }).showToast();
+    return;
+  }
+
+  const isAddressComplete = (a) =>
+    a && a.house && a.landmark && a.phone && a.email && a.locality;
+
+  if (
+    !(
+      isAddressComplete(address.Home) ||
+      isAddressComplete(address.Office) ||
+      isAddressComplete(address.Hotel) ||
+      isAddressComplete(address.Other)
+    )
+  ) {
+    Toastify({
+      text: "Please fill in your complete address.",
+      duration: 3000,
+      gravity: "top",
+      position: "center",
+      backgroundColor: "linear-gradient(to right, #ff0000, #ff6347)",
+    }).showToast();
+    return;
+  }
+
+  const paymentData = {
+    amount: totalAmount, // INR
+    email,
+    name,
+    mobile: mobileNumber,
+    address,
+    giftDetails,
+  };
+
+  const response = await fetch(
+    "https://celebrationbakers.onrender.com/create-order",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(paymentData),
+    }
+  );
+
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message);
+
+  const options = {
+    key: data.key_id,
+    order_id: data.order_id,
+    amount: data.amount, // paise from backend
+    currency: "INR",
+    name: "Celebration Bakers",
+    image: logos,
+
+    prefill: {
+      name,
+      email,
+      contact: mobileNumber,
+    },
+
+    handler: async (response) => {
+      const verifyRes = await fetch(
+        "https://celebrationbakers.onrender.com/verify-payment",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_signature: response.razorpay_signature,
+          }),
         }
+      );
 
-        // Ensure a delivery slot is selected
-if (!deliverySlot) {
-  // Show error message using Toastify
-  Toastify({
-    text: "Please select a delivery slot before proceeding.",
-    duration: 3000,
-    gravity: 'top', // Position of the toast
-    position: 'center', // Center alignment
-    backgroundColor: 'linear-gradient(to right, #ff0000, #ff6347)', // Red for error
-  }).showToast();
+      const verifyData = await verifyRes.json();
 
-  return; // Don't proceed if no delivery slot is selected
-}
+      if (verifyRes.ok) {
+        Toastify({
+          text: "Payment successful! Check your email for details.",
+          duration: 5000,
+          gravity: "top",
+          position: "center",
+          backgroundColor: "linear-gradient(to right, #4caf50, #81c784)",
+        }).showToast();
 
+        setPaymentSuccess(true);
+      } else {
+        setError("Payment verification failed");
+      }
+    },
+  };
 
- // Check if any address (Home, Office, Hotel, Other) is complete
- const isAddressComplete = (addressType) => {
-  return addressType && addressType.house && addressType.landmark && addressType.phone && addressType.email && addressType.locality;
+  new window.Razorpay(options).open();
 };
 
-// Ensure at least one address is complete
-if (
-  !(
-    isAddressComplete(address.Home) ||
-    isAddressComplete(address.Office) ||
-    isAddressComplete(address.Hotel) ||
-    isAddressComplete(address.Other)
-  )
-) {
-  Toastify({
-    text: "Please fill in your complete address before proceeding with payment.",
-    duration: 3000,
-    gravity: 'top', // Position of the toast
-    position: 'center', // Center alignment
-    backgroundColor: 'linear-gradient(to right, #ff0000, #ff6347)', // Red for error
-  }).showToast();
-  return; // Don't proceed if no address is valid
-}
-
-
-    const amountInPaise = totalAmount; // totalAmount should be in INR
-    // Gather all details for the payment
-    const paymentData = {
-      amount: amountInPaise, // Razorpay works with paise, so multiply by 100
-      email: email,
-      name: name,
-      mobile: mobileNumber,
-      address: address,
-      giftDetails: giftDetails,
-    };
-
-  console.log("[]]]]]]]]]]]]]]]]]]]]]]]]]]]]",paymentData)
-    try {
-      const response = await fetch('https://celebrationbakers.onrender.com/create-order', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(paymentData),
-      });
-  
-      const data = await response.json();
-      // Show success message using Toastify
-
-      if (response.ok) {
-        // Continue with Razorpay payment process
-        const options = {
-          key: data.key_id,
-          amount: paymentData.amount, // Amount in paise
-          currency: "INR",
-          order_id: data.order_id,
-          image: logos, // Local image path for your logo
-          name: paymentData.name, // User's name
-          description: "Payment for order", // Optional description
-          prefill: {
-            name: paymentData.name, // User's name
-            email: paymentData.email, // User's email
-          },
-          handler: function (response) {
-            // Verify payment after successful completion
-            fetch('/verify-payment', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                payment_id: response.razorpay_payment_id,
-                order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            }).then((verifyResponse) => {
-                                                                // Show success message using Toastify
-                                                                Toastify({
-                                                                    text: `Payment Successful! Payment ID: ${response.razorpay_payment_id} your order will be delievered within your slot check your email for more details `,
-                                                                    duration: 6000,
-                                                                    gravity: 'top', // Position of the toast
-                                                                    position: 'center', // Center alignment
-                                                                    backgroundColor: 'linear-gradient(to right, #4caf50, #81c784)', // Green for success
-                                                                  }).showToast();
-              return verifyResponse.json();
-            }).then((verifyData) => {
-              if (verifyData.message === "Payment verified successfully") {
-                // Successfully verified payment
-                setPaymentSuccess(true);
-              } else {
-                setError("Payment verification failed");
-              }
-            }).catch((error) => {
-              setError("Error verifying payment");
-            });
-          },
-        };
-        const razorpayInstance = new window.Razorpay(options);
-        razorpayInstance.open();
-      } else {
-        setError(data.message || "Error creating payment order");
-      }
-    } catch (error) {
-      setError("Error creating payment order");
-    }
-  };
   
   
   const subtotalAmount = parseFloat(subtotal) || 0;
