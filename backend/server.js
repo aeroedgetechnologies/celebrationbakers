@@ -25,7 +25,7 @@ mongoose.connect(MONGDB_URI)
 
 // Razorpay instance
 const razorpay = new Razorpay({
-  key: process.env.RAZORPAY_KEY_ID,
+  key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 const addressSchema = new mongoose.Schema({
