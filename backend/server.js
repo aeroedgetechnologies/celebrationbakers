@@ -25,7 +25,7 @@ mongoose.connect(MONGDB_URI)
 
 // Razorpay instance
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
+  key: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 const addressSchema = new mongoose.Schema({
@@ -303,7 +303,7 @@ const customerEmailContent = `
       res.status(200).json({
         message: 'Order created successfully, and emails sent to both customer and admin.',
         order_id: order.id,
-        key_id: process.env.RAZORPAY_KEY_ID,
+        key: process.env.RAZORPAY_KEY_ID,
       });
     });
   } catch (error) {
