@@ -130,7 +130,8 @@ app.post("/create-order", async (req, res) => {
 
     // Razorpay order options
     const options = {
-      amount: amount * 100, // Amount in paise
+      // amount: amount * 100, // Amount in paise
+      amount: Math.round(Number(amount)) * 100
       currency: "INR",
       receipt: "receipt#1",
       notes: {
@@ -147,7 +148,8 @@ app.post("/create-order", async (req, res) => {
       // Save order details in MongoDB
       const payment = new Payment({
         order_id: order.id,
-        amount: amount,
+        // amount: amount,
+        amount: Math.round(Number(amount)),
         status: "pending",
         address: address, // Store the entire address object
         giftDetails: giftDetails, // Store gift details
