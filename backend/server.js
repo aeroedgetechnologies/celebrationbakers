@@ -131,7 +131,7 @@ app.post("/create-order", async (req, res) => {
     // Razorpay order options
     const options = {
       // amount: amount * 100, // Amount in paise
-      amount: Math.round(Number(amount)) * 100
+      amount: Math.round(Number(amount)) * 100,
       currency: "INR",
       receipt: "receipt#1",
       notes: {
