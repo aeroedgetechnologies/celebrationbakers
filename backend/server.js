@@ -149,7 +149,8 @@ app.post("/create-order", async (req, res) => {
       const payment = new Payment({
         order_id: order.id,
         // amount: amount,
-        amount: Math.round(Number(amount)),
+        // amount: Math.round(Number(amount)),
+                amount: Math.round(parseFloat(amount)), // store actual amount (not paise) in DB
         status: "pending",
         address: address, // Store the entire address object
         giftDetails: giftDetails, // Store gift details
