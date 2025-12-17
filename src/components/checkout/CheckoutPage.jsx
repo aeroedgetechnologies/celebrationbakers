@@ -792,38 +792,62 @@ export default function CheckoutPage() {
   
         const data = await response.json();
         if (response.ok) {
-          // Continue with Razorpay payment process
-          const options = {
-            key: data.key_id,
-            amount: paymentData.amount * 100, // Amount in paise
-            currency: "INR",
-            order_id: data.order_id,
-            handler: function (response) {
-              // Verify payment after successful completion
-              fetch('/verify-payment', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  payment_id: response.razorpay_payment_id,
-                  order_id: response.razorpay_order_id,
-                  razorpay_signature: response.razorpay_signature,
-                }),
-              }).then((verifyResponse) => {
-                return verifyResponse.json();
-              }).then((verifyData) => {
-                if (verifyData.message === "Payment verified successfully") {
-                  // Successfully verified payment
-                  setPaymentSuccess(true);
-                } else {
-                  setError("Payment verification failed");
-                }
-              }).catch((error) => {
-                setError("Error verifying payment");
-              });
-            },
-          };
+          // // Continue with Razorpay payment process
+          // const options = {
+          //   key: data.key_id,
+          //   amount: paymentData.amount * 100, // Amount in paise
+          //   currency: "INR",
+          //   order_id: data.order_id,
+          //   handler: function (response) {
+          //     // Verify payment after successful completion
+          //     fetch('/verify-payment', {
+          //       method: 'POST',
+          //       headers: {
+          //         'Content-Type': 'application/json',
+          //       },
+          //       body: JSON.stringify({
+          //         payment_id: response.razorpay_payment_id,
+          //         order_id: response.razorpay_order_id,
+          //         razorpay_signature: response.razorpay_signature,
+          //       }),
+          //     }).then((verifyResponse) => {
+          //       return verifyResponse.json();
+          //     }).then((verifyData) => {
+          //       if (verifyData.message === "Payment verified successfully") {
+          //         // Successfully verified payment
+          //         setPaymentSuccess(true);
+          //       } else {
+          //         setError("Payment verification failed");
+          //       }
+          //     }).catch((error) => {
+          //       setError("Error verifying payment");
+          //     });
+          //   },
+          // };
+              const options = {
+  key: data.key_id,
+  order_id: data.order_id,
+  currency: "INR",
+  name: "Celebration Bakers",
+  image: logos,
+  prefill: {
+    name: paymentData.name,
+    email: paymentData.email,
+    contact: paymentData.mobile,
+  },
+  handler: function (response) {
+    fetch('https://celebrationbakers.onrender.com/verify-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        payment_id: response.razorpay_payment_id,
+        order_id: response.razorpay_order_id,
+        razorpay_signature: response.razorpay_signature,
+      }),
+    });
+  },
+};
+
           const razorpayInstance = new window.Razorpay(options);
           razorpayInstance.open();
         } else {
